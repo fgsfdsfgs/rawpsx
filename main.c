@@ -21,13 +21,13 @@ static inline void pad_init(void) {
 
 static inline u32 pad_get_input(void) {
   register u32 mask = 0;
-  if (pad->btn & PAD_UP)     mask |= IN_DIR_UP;
-  if (pad->btn & PAD_DOWN)   mask |= IN_DIR_DOWN;
-  if (pad->btn & PAD_LEFT)   mask |= IN_DIR_LEFT;
-  if (pad->btn & PAD_RIGHT)  mask |= IN_DIR_RIGHT;
-  if (pad->btn & PAD_CIRCLE) mask |= IN_JUMP;
-  if (pad->btn & PAD_CROSS)  mask |= IN_ACTION;
-  if (pad->btn & PAD_START)  mask |= IN_PAUSE;
+  if (!(pad->btn & PAD_UP))     mask |= IN_DIR_UP;
+  if (!(pad->btn & PAD_DOWN))   mask |= IN_DIR_DOWN;
+  if (!(pad->btn & PAD_LEFT))   mask |= IN_DIR_LEFT;
+  if (!(pad->btn & PAD_RIGHT))  mask |= IN_DIR_RIGHT;
+  if (!(pad->btn & PAD_CIRCLE)) mask |= IN_JUMP;
+  if (!(pad->btn & PAD_CROSS))  mask |= IN_ACTION;
+  if (!(pad->btn & PAD_START))  mask |= IN_PAUSE;
   return mask;
 }
 
