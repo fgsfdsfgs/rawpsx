@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <iso_project image_name="rawpsx.iso">
+  <track type="data">
+    <identifiers
+      system      ="PLAYSTATION"
+      application ="PLAYSTATION"
+      volume      ="ANOTHERW"
+      volume_set  ="ANOTHERW"
+      publisher   ="FGSFDS"
+    />
+    <directory_tree>
+      <file name="system.cnf" type="data" source="system.cnf"/>
+      <file name="rawpsx.exe" type="data" source="rawpsx.exe"/>
+      <dir  name="data" srcdir="data">
+        <file name="bank01" type="data"/>
+        <file name="bank02" type="data"/>
+        <file name="bank03" type="data"/>
+        <file name="bank04" type="data"/>
+        <file name="bank05" type="data"/>
+        <file name="bank06" type="data"/>
+        <file name="bank07" type="data"/>
+        <file name="bank08" type="data"/>
+        <file name="bank09" type="data"/>
+        <file name="bank0a" type="data"/>
+        <file name="bank0b" type="data"/>
+        <file name="bank0c" type="data"/>
+        <file name="bank0d" type="data"/>
+        <file name="memlist.bin" type="data"/>
+      </dir>
+      <dummy sectors="1024"/>
+    </directory_tree>
+  </track>
+  </iso_project>
+</xml>

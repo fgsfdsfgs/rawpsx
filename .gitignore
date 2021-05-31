@@ -1,0 +1,7 @@
+build
+data/*
+!data/.empty
+*.o
+*.elf
+*.exe
+*.iso
