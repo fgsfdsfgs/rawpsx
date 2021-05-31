@@ -239,7 +239,7 @@ static inline void gfx_fixup_colors(void) {
   register u8 c;
   register u8 *cptr = gfx_colorlog;
   register P_TAG *tag = (P_TAG *)gpudata;
-  while (tag->addr != 0xFFFFFF) {
+  while (cptr < gfx_colorlog + gfx_num_draws) {
     switch (tag->code) {
       case 0x28: // POLY_F4
       case 0x68: // TILE_1
