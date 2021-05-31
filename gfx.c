@@ -570,20 +570,20 @@ void gfx_blit_bitmap(const u8 *ptr, const u32 size) {
   // decode; assumes amiga format
   register u16 *dst = gfx_tmp_bitmap;
   register const u8 *src = ptr;
-	for (int y = 0; y < BITMAP_H; ++y) {
-		for (int x = 0; x < BITMAP_W; x += 8) {
-			for (int b = 0; b < 8; ++b) {
-				const int mask = 1 << (7 - b);
-				u8 c = 0;
-				if (src[0 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 0;
-				if (src[1 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 1;
-				if (src[2 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 2;
-				if (src[3 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 3;
-				*dst++ = PSXRGB(gfx_curpal->rgb[c].r, gfx_curpal->rgb[c].g, gfx_curpal->rgb[c].b);
-			}
-			++src;
-		}
-	}
+  for (int y = 0; y < BITMAP_H; ++y) {
+    for (int x = 0; x < BITMAP_W; x += 8) {
+      for (int b = 0; b < 8; ++b) {
+        const int mask = 1 << (7 - b);
+        u8 c = 0;
+        if (src[0 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 0;
+        if (src[1 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 1;
+        if (src[2 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 2;
+        if (src[3 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 3;
+        *dst++ = PSXRGB(gfx_curpal->rgb[c].r, gfx_curpal->rgb[c].g, gfx_curpal->rgb[c].b);
+      }
+      ++src;
+    }
+  }
   // dunk the pic right into the work buffer
   RECT ldrect = work_fb->draw.clip;
   ldrect.h = 200; // images are 320x200
@@ -628,7 +628,7 @@ void gfx_draw_string(const u8 col, s16 x, s16 y, const u16 strid) {
   const u16 startx = x;
   const int len = strlen(str);
 
-	for (int i = 0; i < len; ++i) {
+  for (int i = 0; i < len; ++i) {
     if (str[i] == '\n' || str[i] == '\r') {
       y += 8;
       x = startx;
@@ -636,7 +636,7 @@ void gfx_draw_string(const u8 col, s16 x, s16 y, const u16 strid) {
       gfx_draw_char(col, rgb, stp, str[i], x * 8, y);
       ++x;
     }
-	}
+  }
 }
 
 void gfx_set_font(const u8 *data) {
