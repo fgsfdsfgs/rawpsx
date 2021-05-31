@@ -135,6 +135,7 @@ static void op_reset_script(void) {
   const u8 i = vm_fetch_u8();
   register s8 n = (i & 0x3F) - j;
   if (n < 0) {
+    printf("op_reset_script(): n=%d < 0\n", n);
     return;
   }
   ++n;
@@ -290,9 +291,16 @@ static op_func_t vm_op_table[] = {
 
 int vm_init(void) {
   memset(vm.vars, 0, sizeof(vm.vars));
-  vm.vars[0xE4] = 0x14; // ???
+  vm.vars[0xE4] = 0x14; // copy protection checks this
   vm.vars[0x54] = 0x81; // 0x01 == "Another World", 0x81 == "Out of This World"
   vm.vars[VAR_RANDOM_SEED] = 0x1337;
+#ifndef KEEP_COPY_PROTECTION
+  // if the game was built to start at the intro, set all the copy protection related shit
+  vm.vars[0xBC] = 0x10;
+  vm.vars[0xC6] = 0x80;
+  vm.vars[0xDC] = 0x21;
+  vm.vars[0xF2] = 4000; // this is for DOS, Amiga wants 6000
+#endif
 }
 
 void vm_restart_at(const u16 part_id, const u16 pos) {
@@ -307,6 +315,7 @@ void vm_restart_at(const u16 part_id, const u16 pos) {
 
 void vm_setup_tasks(void) {
   if (res_next_part) {
+    printf("vm_setup_tasks(): transitioning to part %05u\n", res_next_part);
     vm_restart_at(res_next_part, 0);
     res_next_part = 0;
   }
