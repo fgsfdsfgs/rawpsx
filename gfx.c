@@ -130,14 +130,20 @@ int gfx_init(void) {
   // the VM requires 4 framebuffers, 2 of which are used for double buffering
   // the VM itself decides which one to show and which one to draw to
   // FBs are aligned vertically in memory to the 256px boundary for ease of use
-  SetDefDispEnv(&fb[0].disp, 0,     0, 320, 240);
-  SetDefDrawEnv(&fb[0].draw, 0,     0, 320, 240);
-  SetDefDispEnv(&fb[1].disp, 0,   256, 320, 240);
-  SetDefDrawEnv(&fb[1].draw, 0,   256, 320, 240);
-  SetDefDispEnv(&fb[2].disp, 320,   0, 320, 240);
-  SetDefDrawEnv(&fb[2].draw, 320,   0, 320, 240);
-  SetDefDispEnv(&fb[3].disp, 320, 256, 320, 240);
-  SetDefDrawEnv(&fb[3].draw, 320, 256, 320, 240);
+  SetDefDispEnv(&fb[0].disp, 0,     0, 320, 200);
+  SetDefDrawEnv(&fb[0].draw, 0,     0, 320, 200);
+  SetDefDispEnv(&fb[1].disp, 0,   256, 320, 200);
+  SetDefDrawEnv(&fb[1].draw, 0,   256, 320, 200);
+  SetDefDispEnv(&fb[2].disp, 320,   0, 320, 200);
+  SetDefDrawEnv(&fb[2].draw, 320,   0, 320, 200);
+  SetDefDispEnv(&fb[3].disp, 320, 256, 320, 200);
+  SetDefDrawEnv(&fb[3].draw, 320, 256, 320, 200);
+
+  // offset every DISPENV downward by 20px on the screen to account for 320x200
+  fb[0].disp.screen.y = 20;
+  fb[1].disp.screen.y = 20;
+  fb[2].disp.screen.y = 20;
+  fb[3].disp.screen.y = 20;
 
   // always put the CLUTs under everything
   gfx_font_clut_rect = (RECT){ PAL_START_X, PAL_START_Y, NUM_COLORS, 1 };
@@ -362,7 +368,6 @@ static inline void gfx_push_quad_strip_tex(void) {
     gpu_pushprim(sizeof(POLY_FT4));
   }
 }
-
 
 static void gfx_fill_polygon(u8 color, u16 zoom, s16 x, s16 y) {
   const u8 *p = gfx_data;
