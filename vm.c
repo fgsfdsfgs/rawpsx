@@ -126,8 +126,8 @@ static void op_condjmp(void) {
 }
 
 static void op_set_palette(void) {
-  const u16 p = vm_fetch_u16();
-  gfx_set_next_palette(p >> 8);
+  const u16 p = vm_fetch_u16() >> 8;
+  gfx_set_next_palette(p);
 }
 
 static void op_reset_script(void) {
@@ -291,6 +291,7 @@ static op_func_t vm_op_table[] = {
 int vm_init(void) {
   memset(vm.vars, 0, sizeof(vm.vars));
   vm.vars[0xE4] = 0x14; // ???
+  vm.vars[0x54] = 0x81; // 0x01 == "Another World", 0x81 == "Out of This World"
   vm.vars[VAR_RANDOM_SEED] = 0x1337;
 }
 
@@ -301,10 +302,6 @@ void vm_restart_at(const u16 part_id, const u16 pos) {
   memset(vm.script_paused, 0, sizeof(vm.script_paused));
   vm.script_pos[0][0] = 0;
   if (pos >= 0) vm.vars[0] = pos;
-  if (part_id == PART_COPY_PROTECTION) {
-    // 0x01 == "Another World", 0x81 == "Out of This World"
-    vm.vars[0x54] = 0x81;
-  }
   time_now = time_start = 0; // get_timestamp()
 }
 

@@ -19,6 +19,9 @@
 
 #define PACKET_MAX 0x10000
 #define POINTS_MAX 50
+#define PALS_MAX 32
+#define DRAWCALLS_MAX 4096
+
 #define NUM_COLORS 16
 #define NUM_PAGES 4
 
@@ -55,6 +58,12 @@ typedef struct {
   u8 b;
 } rgb_t;
 
+typedef struct {
+  rgb_t rgb[NUM_COLORS];
+  rgb_t blendcolor;
+  u8 loaded;
+} pal_t;
+
 static const rgb_t rgb_black;
 
 static u8 gpubuffers[2][PACKET_MAX];
@@ -75,10 +84,11 @@ static u8 *gfx_data;
 static u16 gfx_num_verts;
 static vert_t gfx_verts[POINTS_MAX];
 
-static rgb_t gfx_pal[NUM_COLORS];
-static rgb_t *gfx_alphacolor = gfx_pal + ALPHA_COLOR_INDEX;
-static u8 gfx_palnum;
-static u8 gfx_next_palnum;
+// palette cache
+static pal_t gfx_pal[PALS_MAX];
+static pal_t *gfx_curpal = gfx_pal + 0;
+static u16 gfx_palnum;
+static u16 gfx_palnum_next;
 
 static u16 gfx_tmp_bitmap[BITMAP_W * BITMAP_H];
 
@@ -87,21 +97,15 @@ static RECT gfx_font_clut_rect;
 static RECT gfx_font_rect;
 static int gfx_font_tpage = 0;
 
+static u8 gfx_colorlog[DRAWCALLS_MAX];
+static u32 gfx_num_draws = 0;
+
 static inline void gpu_pushprim(const u32 size) {
-  const u8 *newptr = primptr + size;
-  const u8 *endptr = gpudata + PACKET_MAX;
-  if (newptr > endptr) {
-    printf("gpu_pushprim(): packet buffer overflow by %d bytes, resyncing\n", newptr - endptr);
-    DrawSync(0);
-    termPrim(lastprim);
-    DrawOTag((u32 *)gpudata);
-    gpubufidx ^= 1;
-    gpudata = gpubuffers[gpubufidx];
-    primptr = lastprim = gpudata;
-  }
+  u8 *newptr = primptr + size;
+  ASSERT(newptr <= gpudata + PACKET_MAX);
   catPrim(lastprim, primptr);
   lastprim = primptr;
-  primptr += size;
+  primptr = newptr;
 }
 
 static inline u8 gfx_fetch_u8(void) {
@@ -171,9 +175,11 @@ int gfx_init(void) {
   primptr = gpudata;
   lastprim = gpudata;
 
-  gfx_palnum = gfx_next_palnum = 0xFF;
-
+  gfx_palnum = gfx_palnum_next = 0xFF;
+  gfx_curpal = gfx_pal + 0;
   gfx_set_font(fnt_default);
+
+  gfx_num_draws = 0;
 
   return 0;
 }
@@ -183,47 +189,104 @@ void gfx_set_databuf(u8 *seg, const u16 ofs) {
   gfx_data = seg + ofs;
 }
 
-void gfx_set_palette(const u8 palnum) {
-  if (palnum >= 32 || palnum == gfx_palnum)
-    return;
-  
-	register const u8 *p = res_seg_video_pal + palnum * NUM_COLORS * sizeof(u16);
-	for (register int i = 0; i < NUM_COLORS; ++i, p += 2) {
-		const u16 color = read16be(p);
-		const u8 r = (color >> 8) & 0xF;
-		const u8 g = (color >> 4) & 0xF;
-		const u8 b =  color       & 0xF;
-		gfx_pal[i].r = (r << 4) | r;
-		gfx_pal[i].g = (g << 4) | g;
-		gfx_pal[i].b = (b << 4) | b;
-	}
+static inline void gfx_load_palette(const u8 n) {
+  register rgb_t *out = gfx_pal[n].rgb;
+  register const u8 *p = res_seg_video_pal + n * NUM_COLORS * sizeof(u16);
+  for (register int i = 0; i < NUM_COLORS; ++i, p += 2) {
+    const u16 color = read16be(p);
+    const u8 r = (color >> 8) & 0xF;
+    const u8 g = (color >> 4) & 0xF;
+    const u8 b =  color       & 0xF;
+    out[i].r = (r << 4) | r;
+    out[i].g = (g << 4) | g;
+    out[i].b = (b << 4) | b;
+  }
+  gfx_pal[n].blendcolor = out[ALPHA_COLOR_INDEX];
+  gfx_pal[n].loaded = 1;
+}
 
+void gfx_set_palette(const u8 palnum) {
+  if (palnum >= PALS_MAX || palnum == gfx_palnum)
+    return;
+  if (!gfx_pal[palnum].loaded)
+    gfx_load_palette(palnum);
   gfx_palnum = palnum;
+  gfx_curpal = gfx_pal + palnum;
 }
 
 void gfx_set_next_palette(const u8 palnum) {
-  gfx_next_palnum = palnum;
+  gfx_palnum_next = palnum;
 }
 
 void gfx_invalidate_palette(void) {
+  // res segments changed, will need to reload
+  for (register int i = 0; i < PALS_MAX; ++i)
+    gfx_pal[i].loaded = 0;
   gfx_palnum = 0xFF;
+  gfx_curpal = gfx_pal + 0;
+}
+
+u16 gfx_get_current_palette(void) {
+  return gfx_palnum;
+}
+
+// since the color palette can change at any time, we must essentially
+// use the last set one for the final framebuffer; however, since colors are
+// inside the drawcalls, we have to patch all the drawcalls by hand before 
+// submitting them and hope that the script is well behaved enough
+static inline void gfx_fixup_colors(void) {
+  rgb_t rgb;
+  register u8 c;
+  register u8 *cptr = gfx_colorlog;
+  register P_TAG *tag = (P_TAG *)gpudata;
+  while (tag->addr != 0xFFFFFF) {
+    switch (tag->code) {
+      case 0x28: // POLY_F4
+      case 0x68: // TILE_1
+      case 0x74: // SPRT_8
+      case 0x02: // FILL
+        c = *cptr++;
+        if (c < NUM_COLORS) {
+          rgb = gfx_curpal->rgb[c];
+          tag->r = rgb.r;
+          tag->g = rgb.g;
+          tag->b = rgb.b;
+        } else if (c == COL_ALPHA) {
+          rgb = gfx_curpal->blendcolor;
+          tag->r = rgb.r;
+          tag->g = rgb.g;
+          tag->b = rgb.b;
+        }
+        break;
+      default:
+        break;
+    }
+    const u32 taglen = (tag->len + 1) * 4;
+    tag = (P_TAG *)((u8 *)tag + taglen);
+  }
 }
 
 void gfx_update_display(const int page) {
   DrawSync(0);
 
+  if (primptr != gpudata)
+    termPrim(lastprim); // need to do it early for the loop
+
+  if (gfx_palnum_next != 0xFF) {
+    gfx_set_palette(gfx_palnum_next);
+    gfx_palnum_next = 0xFF;
+    if (gfx_num_draws)
+      gfx_fixup_colors();
+  }
+
   if (primptr != gpudata) {
-    termPrim(lastprim);
     DrawOTag((u32 *)gpudata);
     gpubufidx ^= 1;
     gpudata = gpubuffers[gpubufidx];
     primptr = lastprim = gpudata;
   }
 
-  if (gfx_next_palnum != 0xFF) {
-    gfx_set_palette(gfx_next_palnum);
-    gfx_next_palnum = 0xFF;
-  }
+  gfx_num_draws = 0;
 
   fb_t *oldfb = front_fb;
   if (page != 0xFE) {
@@ -239,22 +302,27 @@ void gfx_update_display(const int page) {
   }
 }
 
+static inline void gfx_set_draw_fb(const fb_t *new) {
+  // apparently you need a DR_AREA + DR_OFFSET to set draw target, DR_ENV not required
+  DR_AREA *area = (DR_AREA *)primptr;
+  setDrawArea(area, &new->draw.clip);
+  gpu_pushprim(sizeof(DR_AREA));
+  DR_OFFSET *ofs = (DR_OFFSET *)primptr;
+  setDrawOffset(ofs, new->draw.clip.x, new->draw.clip.y);
+  gpu_pushprim(sizeof(DR_OFFSET));
+}
+
 void gfx_set_work_page(const int page) {
   fb_t *new = gfx_get_page(page);
   if (work_fb != new) {
     work_fb = new;
     // change drawing area to the page it wants
-    // apparently you need a DR_AREA + DR_OFFSET to do this
-    DR_AREA *area = (DR_AREA *)primptr;
-    setDrawArea(area, &work_fb->draw.clip);
-    gpu_pushprim(sizeof(DR_AREA));
-    DR_OFFSET *ofs = (DR_OFFSET *)primptr;
-    setDrawOffset(ofs, work_fb->draw.clip.x, work_fb->draw.clip.y);
-    gpu_pushprim(sizeof(DR_OFFSET));
+    gfx_set_draw_fb(new);
   }
 }
 
-static inline void gfx_push_point(const rgb_t color, const u32 stp, const s16 x, const s16 y) {
+static inline void gfx_push_point(const u8 cidx, const rgb_t color, const u32 stp, const s16 x, const s16 y) {
+  gfx_colorlog[gfx_num_draws++] = cidx;
   TILE_1 *prim = (TILE_1 *)primptr;
   setTile1(prim);
   setSemiTrans(prim, stp);
@@ -276,10 +344,11 @@ static inline void gfx_push_point(const rgb_t color, const u32 stp, const s16 x,
  * this example divides into quads 0-5-1-4 and 1-4-2-3 (GL strip ordering)
  * generalizing, we get (i)-(n-1-i)-(i+1)-(n-2-i) / (i)-(j)-(i+1)-(j-1)
  */
-static inline void gfx_push_quad_strip(const rgb_t color, const u32 stp) {
+static inline void gfx_push_quad_strip(const u8 cidx, const rgb_t color, const u32 stp) {
   register u16 j = gfx_num_verts - 1;
   register u16 i = 0;
   for (; i < (gfx_num_verts >> 1) - 1; ++i, --j) {
+    gfx_colorlog[gfx_num_draws++] = cidx;
     POLY_F4 *prim = (POLY_F4 *)primptr;
     setPolyF4(prim);
     setSemiTrans(prim, stp);
@@ -391,10 +460,10 @@ static void gfx_fill_polygon(u8 color, u16 zoom, s16 x, s16 y) {
   }
 
   const u32 stp = (color >= COL_ALPHA);
-  const rgb_t rgb = stp ? *gfx_alphacolor : gfx_pal[color];
+  const rgb_t rgb = stp ? gfx_curpal->blendcolor : gfx_curpal->rgb[color];
 
   if (gfx_num_verts == 4 && bbw == 0 && bbh <= 1) {
-    gfx_push_point(rgb, stp, x, y);
+    gfx_push_point(color, rgb, stp, x, y);
     return;
   }
 
@@ -406,7 +475,7 @@ static void gfx_fill_polygon(u8 color, u16 zoom, s16 x, s16 y) {
   if (color == COL_PAGE)
     gfx_push_quad_strip_tex();
   else
-    gfx_push_quad_strip(rgb, stp);
+    gfx_push_quad_strip(color, rgb, stp);
 }
 
 static void gfx_draw_shape_hierarchy(u16 zoom, s16 x, s16 y) {
@@ -451,16 +520,17 @@ void gfx_draw_shape(u8 color, u16 zoom, s16 x, s16 y) {
 }
 
 void gfx_fill_page(const int page, u8 color) {
-  const fb_t *fb = gfx_get_page(page);
+  gfx_colorlog[gfx_num_draws++] = color;
+  fb_t *fb = gfx_get_page(page);
   FILL *prim = (FILL *)primptr;
   setFill(prim);
   prim->x0 = fb->draw.clip.x;
   prim->y0 = fb->draw.clip.y;
   prim->w = fb->draw.clip.w;
   prim->h = fb->draw.clip.h;
-  prim->r0 = gfx_pal[color].r;
-  prim->g0 = gfx_pal[color].g;
-  prim->b0 = gfx_pal[color].b;
+  prim->r0 = gfx_curpal->rgb[color].r;
+  prim->g0 = gfx_curpal->rgb[color].g;
+  prim->b0 = gfx_curpal->rgb[color].b;
   gpu_pushprim(sizeof(FILL));
 }
 
@@ -509,7 +579,7 @@ void gfx_blit_bitmap(const u8 *ptr, const u32 size) {
 				if (src[1 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 1;
 				if (src[2 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 2;
 				if (src[3 * BITMAP_PLANE_SIZE] & mask) c |= 1 << 3;
-				*dst++ = PSXRGB(gfx_pal[c].r, gfx_pal[c].g, gfx_pal[c].b);
+				*dst++ = PSXRGB(gfx_curpal->rgb[c].r, gfx_curpal->rgb[c].g, gfx_curpal->rgb[c].b);
 			}
 			++src;
 		}
@@ -520,8 +590,9 @@ void gfx_blit_bitmap(const u8 *ptr, const u32 size) {
   LoadImage(&ldrect, (u32 *)gfx_tmp_bitmap);
 }
 
-static inline void gfx_draw_char(const rgb_t col, const u32 stp, char ch, s16 x, s16 y) {
+static inline void gfx_draw_char(const u8 cidx, const rgb_t col, const u32 stp, char ch, s16 x, s16 y) {
   ch -= 0x20;
+  gfx_colorlog[gfx_num_draws++] = cidx;
   SPRT_8 *prim = (SPRT_8 *)primptr;
   setSprt8(prim);
   setSemiTrans(prim, stp);
@@ -553,7 +624,7 @@ void gfx_draw_string(const u8 col, s16 x, s16 y, const u16 strid) {
   }
 
   const u32 stp = (col >= COL_ALPHA);
-  const rgb_t rgb = stp ? *gfx_alphacolor : gfx_pal[col];
+  const rgb_t rgb = stp ? gfx_curpal->blendcolor : gfx_curpal->rgb[col];
   const u16 startx = x;
   const int len = strlen(str);
 
@@ -562,7 +633,7 @@ void gfx_draw_string(const u8 col, s16 x, s16 y, const u16 strid) {
       y += 8;
       x = startx;
     } else {
-      gfx_draw_char(rgb, stp, str[i], x * 8, y);
+      gfx_draw_char(col, rgb, stp, str[i], x * 8, y);
       ++x;
     }
 	}
