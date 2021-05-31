@@ -145,7 +145,7 @@ int gfx_init(void) {
   fb[2].disp.screen.y = 20;
   fb[3].disp.screen.y = 20;
 
-  // always put the CLUTs under everything
+  // always put the CLUTs to the side of everything, in case we need 256 height
   gfx_font_clut_rect = (RECT){ PAL_START_X, PAL_START_Y, NUM_COLORS, 1 };
   // put the font somewhere to the right, should take up just one tpage
   // W divided by 2 because it's in 8-bit CLUT format
@@ -317,9 +317,9 @@ static inline void gfx_push_quad_strip(const rgb_t color, const u32 stp) {
   }
 }
 
-// color == 0xFF means we have to copy an area from work_fb; just use it as a texture
+// color == 0xFF means we have to copy an area from fb0; just use it as a texture
 static inline void gfx_push_quad_strip_tex(void) {
-  const u16 tpage = getTPage(2, 0, work_fb->draw.clip.x, work_fb->draw.clip.y);
+  const u16 tpage = getTPage(2, 0, fb[0].draw.clip.x, fb[0].draw.clip.y);
   register u16 j = gfx_num_verts - 1;
   register u16 i = 0;
   for (; i < (gfx_num_verts >> 1) - 1; ++i, --j) {
