@@ -97,7 +97,7 @@ static inline u8 *gfx_get_page(const int page) {
 }
 
 int gfx_init(void) {
-  ResetGraph(0);
+  ResetGraph(3);
 
   // set up double buffer
   SetDefDispEnv(&gfx_fb[0].disp, 0,     0, 320, 200);

@@ -53,3 +53,4 @@ void res_invalidate_all(void);
 void res_setup_part(const u16 part_id);
 void res_load(const u16 res_id);
 const char *res_get_string(const string_t *strtab, const u16 str_id);
+const mementry_t *res_get_entry(const u16 res_id);

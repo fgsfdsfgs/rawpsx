@@ -7,6 +7,7 @@
 #include "util.h"
 #include "unpack.h"
 #include "tables.h"
+#include "snd.h"
 #include "main.h"
 
 u8 *res_seg_code;
@@ -97,6 +98,7 @@ void res_invalidate_res(void) {
   }
   res_script_ptr = res_script_membase;
   gfx_invalidate_palette();
+  snd_clear_cache();
 }
 
 void res_invalidate_all(void) {
@@ -104,6 +106,7 @@ void res_invalidate_all(void) {
     res_memlist[i].status = RS_NULL;
   res_script_ptr = res_mem;
   gfx_invalidate_palette();
+  snd_clear_cache();
 }
 
 static int res_read_bank(const mementry_t *me, u8 *out) {
@@ -166,6 +169,10 @@ static void res_do_load(void) {
           me->bufptr = memptr;
           me->status = RS_LOADED;
           res_script_ptr += me->unpacked_size;
+          if (me->type == RT_SOUND) {
+            printf("res_do_load(): precaching sound %d size %d\n", resnum, me->unpacked_size);
+            snd_cache_sound(me->bufptr, me->unpacked_size, SND_TYPE_PCM_WITH_HEADER);
+          }
         }
       } else if (me->bank == 12 && me->type == RT_BANK) {
         // DOS demo does not have this resource, ignore it
@@ -215,6 +222,12 @@ void res_load(const u16 res_id) {
     me->status = RS_TOLOAD;
     res_do_load();
   }
+}
+
+const mementry_t *res_get_entry(const u16 res_id) {
+  if (res_id >= PART_BASE)
+    return NULL;
+  return res_memlist + res_id;
 }
 
 const char *res_get_string(const string_t *strtab, const u16 str_id) {

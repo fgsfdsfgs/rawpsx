@@ -7,7 +7,9 @@
 #include "util.h"
 #include "gfx.h"
 #include "snd.h"
+#include "music.h"
 #include "res.h"
+#include "tables.h"
 #include "main.h"
 
 #define VM_NUM_VARS    0x100
@@ -230,7 +232,8 @@ static void op_shr(void) {
 static void op_update_memlist(void) {
   const u16 num = vm_fetch_u16();
   if (num == 0) {
-    // TODO: stop sound
+    mus_stop();
+    snd_stop_all();
     res_invalidate_res();
   } else {
     res_load(num);
@@ -240,16 +243,36 @@ static void op_update_memlist(void) {
 static void op_play_sound(void) {
   const u16 res = vm_fetch_u16();
   const u8 freq = vm_fetch_u8();
-  const u8 vol = vm_fetch_u8();
+  u8 vol = vm_fetch_u8();
   const u8 channel = vm_fetch_u8();
-  // TODO: play sound
+
+  if (vol > 63) {
+    vol = 63;
+  } else if (vol == 0) {
+    snd_stop_sound(channel);
+    return;
+  }
+
+  const mementry_t *me = res_get_entry(res);
+  if (me && me->status == RS_LOADED) {
+    ASSERT(freq < 40);
+    snd_play_sound(channel & 3, me->bufptr, freq_tab[freq], vol);
+  }
 }
 
 static void op_play_music(void) {
   const u16 res = vm_fetch_u16();
   const u16 delay = vm_fetch_u16();
   const u8 pos = vm_fetch_u8();
-  // TODO: play music
+
+  if (res != 0) {
+    mus_load(res, delay, pos);
+    mus_start();
+  } else if (delay != 0) {
+    mus_set_delay(delay);
+  } else {
+    mus_stop();
+  }
 }
 
 static op_func_t vm_op_table[] = {
@@ -304,7 +327,8 @@ int vm_init(void) {
 }
 
 void vm_restart_at(const u16 part_id, const u16 pos) {
-  // TODO: stop sound
+  mus_stop();
+  snd_stop_all();
   res_setup_part(part_id);
   memset(vm.script_pos, 0xFF, sizeof(vm.script_pos));
   memset(vm.script_paused, 0, sizeof(vm.script_paused));
