@@ -3,10 +3,11 @@ include psn00bsdk-setup.mk
 # Project target name
 TARGET		= rawpsx
 
-# Searches for C, C++ and S (assembler) files in local directory
-CFILES		= $(notdir $(wildcard *.c))
-CPPFILES 	= $(notdir $(wildcard *.cpp))
-AFILES		= $(notdir $(wildcard *.s))
+# Searches for C, C++ and S (assembler) files in specified directory
+SRCDIR		= src
+CFILES		= $(notdir $(wildcard $(SRCDIR)/*.c))
+CPPFILES 	= $(notdir $(wildcard $(SRCDIR)/*.cpp))
+AFILES		= $(notdir $(wildcard $(SRCDIR)/*.s))
 
 # Create names for object files
 OFILES		= $(addprefix build/,$(CFILES:.c=.o)) \
@@ -43,15 +44,15 @@ $(TARGET).exe: $(OFILES)
 	$(LD) $(LDFLAGS) $(LIBDIRS) $(OFILES) $(LIBS) -o $(TARGET).elf
 	elf2x -q $(TARGET).elf
 
-build/%.o: %.c
+build/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 	
-build/%.o: %.cpp
+build/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(AFLAGS) $(INCLUDE) -c $< -o $@
 	
-build/%.o: %.s
+build/%.o: $(SRCDIR)/%.s
 	@mkdir -p $(dir $@)
 	$(CC) $(AFLAGS) $(INCLUDE) -c $< -o $@
 	
