@@ -54,12 +54,16 @@ static inline u32 mus_get_base_clock(void) {
   const u32 gpu_status = *GPU_STATUS;
   const u32 is_pal_bios = (*BIOS_REGION == 'E');
   const u32 is_pal_mode = ((gpu_status & 0x00100000) != 0);
-  return clocks[(is_pal_mode << 1) | is_pal_bios];
+  const u32 clk = clocks[(is_pal_mode << 1) | is_pal_bios];
+  // rescale to ~20fps
+  return clk / 3;
 }
 
 static inline u32 mus_get_delay_ticks(const u32 delay) {
   // get our hblank clock ticks from meme amiga ticks and hope it doesn't overflow
-  return delay * mus_base_clock / (7050 * 60);
+  const u32 ms = delay * 60 / 7050;
+  const u32 bpm = (1000 / ms);
+  return mus_base_clock / bpm;
 }
 
 void mus_init(void) {
