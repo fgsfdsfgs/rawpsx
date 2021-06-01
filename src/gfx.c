@@ -109,6 +109,14 @@ int gfx_init(void) {
   gfx_fb[0].disp.screen.y = 20;
   gfx_fb[1].disp.screen.y = 20;
 
+  // clear screen ASAP
+  FILL fill = { 0 };
+  setFill(&fill);
+  fill.w = SCREEN_W * 2;
+  fill.h = SCREEN_H * 2;
+  DrawPrim(&fill);
+  DrawSync(0);
+
   // we're going to be blitting the screen texture by drawing two SPRTs with parts of it
   const u16 btpage1 = getTPage(1, 0, gfx_buffer_rect.x, gfx_buffer_rect.y);
   // offset by 128 and not 256 because screen texture is 8-bit
