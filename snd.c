@@ -117,6 +117,7 @@ static inline sound_t *snd_cache_find(const u8 *ptr) {
 static u16 snd_convert_pcm(u8 *out, const u8 *in, const u16 size, const int loop) {
   const s32 adpcm_size = adpcm_pack_mono_s8(out, size, (const s8 *)in, size, loop);
   ASSERT(adpcm_size >= 0);
+  ASSERT(adpcm_size <= size);
   return adpcm_size;
 }
 
