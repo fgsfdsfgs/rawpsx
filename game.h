@@ -14,15 +14,4 @@ enum game_parts_e {
   PART_LAST = 16009
 };
 
-#define START_PART PART_INTRO
-
-// matches in game masks
-enum input_mask_e {
-  IN_DIR_RIGHT = 0x01,
-  IN_DIR_LEFT  = 0x02,
-  IN_DIR_DOWN  = 0x04,
-  IN_DIR_UP    = 0x08,
-  IN_ACTION    = 0x80,
-  IN_JUMP      = 1 << 5,
-  IN_PAUSE     = 1 << 6,
-};
+#define START_PART PART_COPY_PROTECTION

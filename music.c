@@ -8,7 +8,7 @@
 #include "snd.h"
 #include "util.h"
 #include "tables.h"
-#include "main.h"
+#include "game.h"
 #include "vm.h"
 #include "music.h"
 

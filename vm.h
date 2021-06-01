@@ -24,4 +24,4 @@ s16 vm_get_var(const u8 i);
 void vm_restart_at(const u16 part_id, const u16 pos);
 void vm_setup_tasks(void);
 void vm_run(void);
-void vm_update_input(const u32 mask);
+void vm_update_input(u32 mask);

@@ -8,9 +8,10 @@
 #include "gfx.h"
 #include "snd.h"
 #include "music.h"
+#include "pad.h"
 #include "res.h"
 #include "tables.h"
-#include "main.h"
+#include "game.h"
 
 #define VM_NUM_VARS    0x100
 #define VM_STACK_DEPTH 0x40
@@ -429,7 +430,7 @@ s16 vm_get_var(const u8 i) {
   return vm.vars[i];
 }
 
-void vm_update_input(const u32 mask) {
+void vm_update_input(u32 mask) {
   s16 lr = 0;
   s16 m = 0;
   s16 ud = 0;
@@ -451,8 +452,18 @@ void vm_update_input(const u32 mask) {
 
   s16 action = 0;
   if (mask & (IN_ACTION))
-    action = 0, m |= 0x80;
+    action = 1, m |= 0x80;
 
   vm.vars[VAR_HERO_ACTION] = action;
   vm.vars[VAR_HERO_ACTION_POS_MASK] = m;
+
+  if (mask & IN_PAUSE) {
+    if (res_cur_part != PART_COPY_PROTECTION && res_cur_part != PART_INTRO) {
+      mask &= ~IN_PAUSE;
+      do {
+        VSync(0);
+        mask = pad_get_input();
+      } while (!(mask & IN_PAUSE));
+    }
+  }
 }

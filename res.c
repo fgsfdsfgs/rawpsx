@@ -8,7 +8,7 @@
 #include "unpack.h"
 #include "tables.h"
 #include "snd.h"
-#include "main.h"
+#include "game.h"
 
 u8 *res_seg_code;
 u8 *res_seg_video[2];
