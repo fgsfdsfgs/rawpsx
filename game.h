@@ -14,4 +14,4 @@ enum game_parts_e {
   PART_LAST = 16009
 };
 
-#define START_PART PART_COPY_PROTECTION
+#define START_PART PART_INTRO
