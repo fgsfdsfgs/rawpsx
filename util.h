@@ -22,3 +22,7 @@ static inline u32 read32be(const u8 *p) {
 static inline u16 read16be(const u8 *p) {
   return p[1] | (p[0] << 8);
 }
+
+static inline u16 read16le(const u8 *p) {
+  return p[0] | (p[1] << 8);
+}

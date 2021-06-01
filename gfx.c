@@ -159,19 +159,12 @@ void gfx_set_databuf(u8 *seg, const u16 ofs) {
 static inline void gfx_load_palette(const u8 n) {
   register u16 *out = gfx_pal;
   register const u8 *p = res_seg_video_pal + n * NUM_COLORS * sizeof(u16);
+  register u16 c;
   for (register int i = 0; i < NUM_COLORS; ++i, p += 2, ++out) {
-    const u16 color = read16be(p);
-    u8 r = (color >> 8) & 0xF;
-    u8 g = (color >> 4) & 0xF;
-    u8 b =  color       & 0xF;
-    if (!r && !g && !b) {
-      *out = 0x8000; // non-transparent black
-    } else {
-      r = (r << 4) | r;
-      g = (g << 4) | g;
-      b = (b << 4) | b;
-      *out = PSXRGB(r, g, b);
-    }
+    c = read16be(p); // BGR444
+    // convert to RGB555X
+    c = ((c & 0xF) << 11) | (((c >> 4) & 0xF) << 6) | (((c >> 8) & 0xF) << 1);
+    *out = c ? c : 0x8000; // replace black with PSX non-transparent black
   }
 }
 
