@@ -180,7 +180,6 @@ void snd_play_sound(const u8 ch, const u8 *data, const u16 freq, const u8 vol) {
   const u32 chmask = SPU_VOICECH((u32)ch);
   if (snd->size && snd->spuaddr >= 0) {
     const s16 vvol = (s16)vol << 8;
-    // printf("playing sound %p on ch%02x freq=%05d(%05d) vol=%03d(%6d) spuaddr=%06x\n", data, ch, freq, freq2pitch(freq), vol, vvol, snd->spuaddr);
     SPU_VOICE(ch)->vol_left = vvol;
     SPU_VOICE(ch)->vol_right = vvol;
     SPU_VOICE(ch)->sample_startaddr = ((u32)snd->spuaddr >> 3);
@@ -191,7 +190,6 @@ void snd_play_sound(const u8 ch, const u8 *data, const u16 freq, const u8 vol) {
 }
 
 void snd_stop_sound(const u8 ch) {
-  // printf("stopping sound on ch%02x\n", ch);
   const u32 chmask = SPU_VOICECH((u32)ch);
   snd_key_mask &= chmask;
   spu_key_off(chmask);
