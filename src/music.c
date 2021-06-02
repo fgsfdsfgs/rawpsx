@@ -2,6 +2,7 @@
 #include <string.h>
 #include <psxapi.h>
 #include <psxetc.h>
+#include <psxgpu.h>
 
 #include "types.h"
 #include "res.h"
@@ -9,6 +10,7 @@
 #include "util.h"
 #include "tables.h"
 #include "game.h"
+#include "gfx.h"
 #include "vm.h"
 #include "music.h"
 
@@ -16,9 +18,6 @@
 #define NUM_CH 4
 #define MAX_ORDER 0x80
 #define PAT_SIZE 1024
-
-#define GPU_STATUS  ((volatile u32 *)0x1F801814)
-#define BIOS_REGION ((const char   *)0xBFC7FF52)
 
 typedef struct {
   const u8 *data;
@@ -45,25 +44,23 @@ static void mus_callback(void);
 
 // https://github.com/grumpycoders/pcsx-redux/blob/main/src/mips/modplayer/modplayer.c:195
 static inline u32 mus_get_base_clock(void) {
-  static const u32 clocks[4] = {
-    39336, // !mode && !bios => 262.5 * 125 * 59.940 / 50 or 263 * 125 * 59.826 / 50
-    38977, // !mode &&  bios => 262.5 * 125 * 59.393 / 50 or 263 * 125 * 59.280 / 50
-    39422, //  mode && !bios => 312.5 * 125 * 50.460 / 50 or 314 * 125 * 50.219 / 50
-    39062, //  mode &&  bios => 312.5 * 125 * 50.000 / 50 or 314 * 125 * 49.761 / 50
+  static const u32 hblanks_per_sec[4] = {
+    15734, // !mode && !bios => 262.5 * 59.940
+    15591, // !mode &&  bios => 262.5 * 59.393
+    15769, //  mode && !bios => 312.5 * 50.460
+    15625, //  mode &&  bios => 312.5 * 50.000
   };
-  const u32 gpu_status = *GPU_STATUS;
-  const u32 is_pal_bios = (*BIOS_REGION == 'E');
-  const u32 is_pal_mode = ((gpu_status & 0x00100000) != 0);
-  const u32 clk = clocks[(is_pal_mode << 1) | is_pal_bios];
-  // rescale to ~20fps
-  return clk / 3;
+  const u32 is_pal_bios = gfx_get_default_mode() == MODE_PAL;
+  const u32 is_pal_mode = gfx_get_current_mode() == MODE_PAL;
+  const u32 clk = hblanks_per_sec[(is_pal_mode << 1) | is_pal_bios];
+  return is_pal_mode ? clk : (clk * 5 / 6);
 }
 
 static inline u32 mus_get_delay_ticks(const u32 delay) {
   // get our hblank clock ticks from meme amiga ticks and hope it doesn't overflow
   const u32 ms = delay * 60 / 7050;
-  const u32 bpm = (1000 / ms);
-  return mus_base_clock / bpm;
+  const u32 bpm = 60000 / ms;
+  return mus_base_clock * 60 / bpm;
 }
 
 void mus_init(void) {
@@ -150,6 +147,8 @@ void mus_stop(void) {
   EnterCriticalSection();
   StopRCnt(RCntCNT1);
   ExitCriticalSection();
+  // stop all channels
+  snd_stop_all();
 }
 
 void mus_update(void) {
