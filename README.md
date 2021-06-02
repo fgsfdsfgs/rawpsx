@@ -12,7 +12,7 @@ performance issues.
 
 The `hw` branch renders everything using the GPU, but has palette swapping issues and is outdated.
 
-# Running pre-built releases
+## Running pre-built releases
 
 1. Obtain the latest GitHub release, if there are any.
 2. Put the data files from the DOS version of Another World/Out of This World into the `data` folder.
@@ -23,7 +23,7 @@ The `hw` branch renders everything using the GPU, but has palette swapping issue
 5. Write the ISO image to a CD-R and play it on your PlayStation
    using a modchip or some sort of other protection bypass.
 
-# Building
+## Building
 
 1. [Set up PSn00bSDK](https://github.com/Lameguy64/PSn00bSDK#obtaining-psn00bsdk) and ensure it is in `PATH`.
 2. [Get mkpsxiso](https://github.com/Lameguy64/mkpsxiso/releases/latest) and ensure it is in `PATH`.
@@ -34,7 +34,7 @@ The `hw` branch renders everything using the GPU, but has palette swapping issue
 4. Write the ISO image to a CD-R and play it on your PlayStation using a modchip
    or some sort of other protection bypass.
 
-# Credits
+## Credits
 * Lameguy64 for PSn00bSDK;
 * cyxx for raw/rawgl;
 * Giuseppe Gatta (?) for PSXSDK;
