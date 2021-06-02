@@ -35,7 +35,9 @@ AFLAGS		= -g
 LDFLAGS		= -g -Ttext=0x80010000 -gc-sections \
 			-T $(GCC_BASE)/$(PREFIX)/lib/ldscripts/elf32elmip.x
 
-all: $(TARGET).iso
+all: $(TARGET).exe
+
+iso: $(TARGET).iso
 
 $(TARGET).iso: $(TARGET).exe
 	mkpsxiso -y -q iso.xml
@@ -59,4 +61,4 @@ build/%.o: $(SRCDIR)/%.s
 clean:
 	rm -rf build $(TARGET).elf $(TARGET).exe
 
-.PHONY: all clean
+.PHONY: all iso clean
