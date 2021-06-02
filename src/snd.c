@@ -72,11 +72,13 @@ static inline s32 spu_alloc(s32 size) {
 }
 
 static inline void spu_key_on(const u32 mask) {
+  SpuWait(); // TODO: is this advisable to do in an interrupt handler?
   *SPU_KEY_ON_LO = mask;
   *SPU_KEY_ON_HI = mask >> 16;
 }
 
 static inline void spu_key_off(const u32 mask) {
+  SpuWait(); // TODO: is this advisable to do in an interrupt handler?
   *SPU_KEY_OFF_LO = mask;
   *SPU_KEY_OFF_HI = mask >> 16;
 }
@@ -194,30 +196,24 @@ void snd_play_sound(const u8 ch, const u8 *data, const u16 freq, const u8 vol) {
     return;
   }
   const u32 chmask = SPU_VOICECH((u32)ch);
-  spu_key_off(chmask);
   if (snd->size && snd->spuaddr >= 0) {
     const s16 vvol = (s16)vol << 8;
     SPU_VOICE(ch)->vol_left = vvol;
     SPU_VOICE(ch)->vol_right = vvol;
     SPU_VOICE(ch)->sample_rate = freq2pitch(freq);
-    SPU_VOICE(ch)->sample_repeataddr = 0;
     SPU_VOICE(ch)->sample_startaddr = ((u32)snd->spuaddr >> 3);
+    spu_key_on(chmask); // this restarts the channel on the new address
     snd_key_mask |= chmask;
-    SpuWait();
-    spu_key_on(chmask);
   }
 }
 
 void snd_stop_sound(const u8 ch) {
-  const u32 chmask = SPU_VOICECH((u32)ch);
-  snd_key_mask &= chmask;
+  snd_key_mask &= SPU_VOICECH((u32)ch);
+  // just kill the volume, using keyoff produces noticeable pops and delays
   snd_set_sound_vol(ch, 0);
-  SpuWait();
-  spu_key_off(chmask);
 }
 
 void snd_stop_all(void) {
-  SpuWait();
   spu_key_off(0xFFFFFF); // kill all voices
 }
 
