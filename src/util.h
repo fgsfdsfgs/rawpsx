@@ -2,6 +2,7 @@
 
 #include "types.h"
 
+#define ALIGN(x, align) (((x) + ((align) - 1)) & ~((align) - 1))
 #define ASSERT(x) do_assert((x), #x, __FILE__, __LINE__)
 
 void panic(const char *fmt, ...) __attribute__((noreturn));

@@ -118,16 +118,24 @@ static inline void adpcm_do_pack(const s32 *d_samples, s16 *four_bit, const s32 
   }
 }
 
-int adpcm_pack_mono_s8(u8 *out, const int out_size, const s8 *pcm, int pcm_size, const int loop) {
+int adpcm_pack_mono_s8(u8 *out, int out_size, const s8 *pcm, int pcm_size, int loopstart, int loopend) {
   register int i, j, k;
   register s16 *inptr;
   register u8 *outptr;
   register u8 d;
+  register int pcmpos = 0;
   s32 d_samples[PCM_CHUNK_SIZE];
   s16 four_bit[PCM_CHUNK_SIZE];
   s32 predict_nr;
   s32 shift_factor;
-  int flags = loop ? FLAG_LOOP_START : 0;
+  int flags = 0;
+  const int doloop = (loopstart >= 0 && loopend > loopstart && loopend <= pcm_size);
+
+  // convert to chunk numbers
+  if (doloop) {
+    loopstart /= PCM_CHUNK_SIZE;
+    loopend   /= PCM_CHUNK_SIZE;
+  }
 
   // reset globals
   pack_s1 = pack_s2 = 0;
@@ -158,6 +166,18 @@ int adpcm_pack_mono_s8(u8 *out, const int out_size, const s8 *pcm, int pcm_size,
       inptr = pcm_buffer + j * PCM_CHUNK_SIZE;
       adpcm_find_predict(inptr, d_samples, &predict_nr, &shift_factor);
       adpcm_do_pack(d_samples, four_bit, predict_nr, shift_factor);
+      if (doloop) {
+        // TODO: can probably do this outside of the loop but eh
+        if (loopstart >= 0 && pcmpos >= loopstart) {
+          // reached block where the start of the loop is, set loop start flag
+          flags = FLAG_LOOP_START;
+          loopstart = -1;
+        } else if (loopend >= 0 && pcmpos >= loopend) {
+          // reached block where the end of the loop is, set loop end flag
+          flags = FLAG_LOOP_END | FLAG_LOOP_REPEAT;
+          loopend = -1;
+        }
+      }
       d = (predict_nr << 4) | shift_factor;
       *outptr++ = d;
       *outptr++ = flags;
@@ -165,8 +185,9 @@ int adpcm_pack_mono_s8(u8 *out, const int out_size, const s8 *pcm, int pcm_size,
         d = ((four_bit[k + 1] >> 8) & 0xF0) | ((four_bit[k] >> 12) & 0xF);
         *outptr++ = d;
       }
+      flags = 0;
+      ++pcmpos; // in chunks
       pcm_size -= PCM_CHUNK_SIZE;
-      if (loop) flags = 0; // reset flags to 0 after setting loop start
     }
   }
 
@@ -174,8 +195,9 @@ int adpcm_pack_mono_s8(u8 *out, const int out_size, const s8 *pcm, int pcm_size,
   if (outptr + ADPCM_BLOCK_SIZE > out + out_size)
     goto _err_too_big;
 
+  // loop endlessly in this null block
   flags = FLAG_LOOP_END | FLAG_LOOP_REPEAT;
-  if (!loop) flags |= FLAG_LOOP_START; // loop forever in this chunk
+  if (!doloop) flags |= FLAG_LOOP_START;
   *outptr++ = (predict_nr << 4) | shift_factor;
   *outptr++ = flags;
   for (i = 0; i < PCM_CHUNK_SIZE / 2; ++i)
