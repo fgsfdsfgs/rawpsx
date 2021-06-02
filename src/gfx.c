@@ -15,8 +15,10 @@
 #define PAGE_W 320
 #define PAGE_H 200
 
-#define SCREEN_W 320
-#define SCREEN_H 240
+#define PAL_SCREEN_W  320
+#define PAL_SCREEN_H  256
+#define NTSC_SCREEN_W 320
+#define NTSC_SCREEN_H 240
 
 #define NUM_PAGES 4
 #define NUM_BUFFERS 2
@@ -52,6 +54,11 @@ typedef struct {
   s16 y;
 } vert_t;
 
+static int gfx_start_mode;
+static int gfx_cur_mode;
+static int gfx_cur_width;
+static int gfx_cur_height;
+
 static fb_t gfx_fb[NUM_BUFFERS];
 static int gfx_fb_idx;
 
@@ -73,8 +80,8 @@ static u8 *gfx_page_front;
 static u8 *gfx_page_back;
 static u8 *gfx_page_work;
 
-static RECT gfx_buffer_rect = { SCREEN_W, 0, PAGE_W >> 1, PAGE_H };
-static RECT gfx_pal_rect = { SCREEN_W, 256, NUM_COLORS, 1 };
+static RECT gfx_buffer_rect = { PAL_SCREEN_W, 0, PAGE_W >> 1, PAGE_H };
+static RECT gfx_pal_rect = { PAL_SCREEN_W, 256, NUM_COLORS, 1 };
 
 static inline u8 gfx_fetch_u8(void) {
   return *(gfx_data++);
@@ -99,21 +106,32 @@ static inline u8 *gfx_get_page(const int page) {
 int gfx_init(void) {
   ResetGraph(3);
 
-  // set up double buffer
-  SetDefDispEnv(&gfx_fb[0].disp, 0,     0, 320, 200);
-  SetDefDrawEnv(&gfx_fb[1].draw, 0,     0, 320, 200);
-  SetDefDispEnv(&gfx_fb[1].disp, 0,   256, 320, 200);
-  SetDefDrawEnv(&gfx_fb[0].draw, 0,   256, 320, 200);
+  gfx_start_mode = gfx_cur_mode = GetVideoMode();
+  if (gfx_cur_mode == MODE_PAL) {
+    gfx_cur_width = PAL_SCREEN_W;
+    gfx_cur_height = PAL_SCREEN_H;
+  } else {
+    gfx_cur_width = NTSC_SCREEN_W;
+    gfx_cur_height = NTSC_SCREEN_H;
+  }
 
-  // offset every DISPENV downward by 20px on the screen to account for 320x200
-  gfx_fb[0].disp.screen.y = 20;
-  gfx_fb[1].disp.screen.y = 20;
+  // set up double buffer
+  SetDefDispEnv(&gfx_fb[0].disp, 0,     0, PAGE_W, PAGE_H);
+  SetDefDrawEnv(&gfx_fb[1].draw, 0,     0, PAGE_W, PAGE_H);
+  SetDefDispEnv(&gfx_fb[1].disp, 0,   256, PAGE_W, PAGE_H);
+  SetDefDrawEnv(&gfx_fb[0].draw, 0,   256, PAGE_W, PAGE_H);
+
+  // offset every DISPENV downward on the screen to account for 320x200 pages
+  gfx_fb[0].disp.screen.y = gfx_fb[1].disp.screen.y = (gfx_cur_height - PAGE_H) / 2;
 
   // clear screen ASAP
+  // need two FILL primitives because h=512 doesn't work correctly
   FILL fill = { 0 };
   setFill(&fill);
-  fill.w = SCREEN_W * 2;
-  fill.h = SCREEN_H * 2;
+  fill.w = 512;
+  fill.h = 256;
+  DrawPrim(&fill);
+  fill.y0 = 256;
   DrawPrim(&fill);
   DrawSync(0);
 
@@ -153,6 +171,9 @@ int gfx_init(void) {
   gfx_fb_idx = 0;
   PutDispEnv(&gfx_fb[0].disp);
   PutDrawEnv(&gfx_fb[0].draw);
+
+  printf("gfx_init(): start mode %d, current mode %d\n", gfx_start_mode, GetVideoMode());
+
   // enable output
   SetDispMask(1);
 
@@ -474,4 +495,12 @@ void gfx_draw_string(const u8 col, s16 x, s16 y, const u16 strid) {
 
 void gfx_set_font(const u8 *data) {
   gfx_font = data;
+}
+
+int gfx_get_default_mode(void) {
+  return gfx_start_mode;
+}
+
+int gfx_get_current_mode(void) {
+  return gfx_cur_mode;
 }

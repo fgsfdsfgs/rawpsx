@@ -22,3 +22,5 @@ void gfx_blit_bitmap(const u8 *ptr, const u32 size);
 void gfx_draw_string(const u8 col, s16 x, s16 y, const u16 strid);
 void gfx_set_font(const u8 *data);
 u16 gfx_get_current_palette(void);
+int gfx_get_default_mode(void);
+int gfx_get_current_mode(void);
