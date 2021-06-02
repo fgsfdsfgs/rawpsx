@@ -6,6 +6,12 @@ rewritten in C using [PSn00bSDK](https://github.com/Lameguy64/PSn00bSDK).
 At the moment rawpsx only supports running the full DOS version of the game,
 but eventually I will probably add support for the Amiga version and the DOS demo as well.
 
+The `sw` branch renders the graphics in software mode and uploads the resulting page to VRAM, and
+is the primary branch since it looks like the entire game works fine this way, with little to no
+performance issues.
+
+The `hw` branch renders everything using the GPU, but has palette swapping issues and is outdated.
+
 # Running pre-built releases
 
 1. Obtain the latest GitHub release, if there are any.
