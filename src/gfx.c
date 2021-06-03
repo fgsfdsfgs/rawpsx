@@ -75,7 +75,8 @@ static u8 gfx_pal_uploaded = 0;
 
 static const u8 *gfx_font;
 
-static u8 gfx_page[NUM_PAGES][PAGE_W * PAGE_H];
+// gotta align these to 4 bytes to use memcpy_w
+static u8 gfx_page[NUM_PAGES][PAGE_W * PAGE_H] __attribute__((aligned(4)));
 static u8 *gfx_page_front;
 static u8 *gfx_page_back;
 static u8 *gfx_page_work;
@@ -420,21 +421,23 @@ void gfx_draw_shape(u8 color, u16 zoom, s16 x, s16 y) {
 
 void gfx_fill_page(const int page, u8 color) {
   u8 *pagedata = gfx_get_page(page);
-  memset(pagedata, color, PAGE_W * PAGE_H);
+  // memset_w sets 4 bytes per step, so we gotta dup our color
+  const u32 color_w = color | (color << 8) | (color << 16) | (color << 24);
+  memset_w(pagedata, color_w, PAGE_W * PAGE_H);
 }
 
 void gfx_copy_page(int src, int dst, s16 yscroll) {
   if (src >= 0xFE || ((src &= ~0x40) & 0x80) == 0) {
     // no y scroll
-    memcpy(gfx_get_page(dst), gfx_get_page(src), PAGE_H * PAGE_W);
+    memcpy_w(gfx_get_page(dst), gfx_get_page(src), PAGE_H * PAGE_W);
   } else {
     const u8 *srcpage = gfx_get_page(src & 3);
     u8 *dstpage = gfx_get_page(dst);
     if (srcpage != dstpage && yscroll >= -199 && yscroll <= 199) {
       if (yscroll < 0)
-        memcpy(dstpage, srcpage - yscroll * PAGE_W, (PAGE_H + yscroll) * PAGE_W);
+        memcpy_w(dstpage, srcpage - yscroll * PAGE_W, (PAGE_H + yscroll) * PAGE_W);
       else
-        memcpy(dstpage + yscroll * PAGE_W, srcpage, (PAGE_H - yscroll) * PAGE_W);
+        memcpy_w(dstpage + yscroll * PAGE_W, srcpage, (PAGE_H - yscroll) * PAGE_W);
     }
   }
 }

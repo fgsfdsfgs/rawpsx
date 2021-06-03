@@ -27,3 +27,8 @@ static inline u16 read16be(const u8 *p) {
 static inline u16 read16le(const u8 *p) {
   return p[0] | (p[1] << 8);
 }
+
+// memcpy and memset operating on words (see mem.s)
+// addresses and byte count must be multiples of 4
+extern void *memcpy_w(void *dst, const void *src, int n);
+extern void *memset_w(void *dst, const u32 set, int n);
