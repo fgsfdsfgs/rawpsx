@@ -144,7 +144,7 @@ void cd_freadordie(void *ptr, s32 size, s32 num, cd_file_t *f) {
 }
 
 s32 cd_fseek(cd_file_t *f, s32 ofs, s32 whence) {
-  s32 fsec, bofs, left;
+  s32 fsec, bofs;
   CdlLOC pos;
 
   if (!f) return -1;
@@ -171,9 +171,8 @@ s32 cd_fseek(cd_file_t *f, s32 ofs, s32 whence) {
 
   if (bofs != f->bufp) {
     // buffer offset changed (or new sector loaded); reset pointers
-    left = f->cdf.size - ofs;
     f->bufp = bofs;
-    f->bufleft = ((left >= BUFSIZE) ? BUFSIZE : left) - bofs;
+    f->bufleft = BUFSIZE - bofs;
     if (f->bufleft < 0) f->bufleft = 0;
   }
 
