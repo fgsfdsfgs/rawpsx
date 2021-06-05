@@ -11,6 +11,7 @@ enum input_mask_e {
   IN_ACTION    = 0x80,
   IN_JUMP      = 1 << 5,
   IN_PAUSE     = 1 << 6,
+  IN_PASSWORD  = 1 << 7,
 };
 
 void pad_init(void);
