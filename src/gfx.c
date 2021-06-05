@@ -444,7 +444,7 @@ void gfx_copy_page(int src, int dst, s16 yscroll) {
 
 void gfx_blit_bitmap(const u8 *ptr, const u32 size) {
   // decode; assumes amiga format
-  register u8 *dst = gfx_page_work;
+  register u8 *dst = gfx_page[0];
   register const u8 *src = ptr;
   for (int y = 0; y < PAGE_H; ++y) {
     for (int x = 0; x < PAGE_W; x += 8) {
