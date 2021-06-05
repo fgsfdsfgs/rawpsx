@@ -12,9 +12,6 @@
 
 #define BITMAP_PLANE_SIZE 8000 // 200 * 320 / 8
 
-#define PAGE_W 320
-#define PAGE_H 200
-
 #define PAL_SCREEN_W  320
 #define PAL_SCREEN_H  256
 #define NTSC_SCREEN_W 320

@@ -201,6 +201,10 @@ const string_t str_tab_fr[] = {
   { 0x193, "Monsieur est en parfaite sante." },
   { 0x194, "O" },
   { 0x193, "AU BOULOT !!!\n" },
+  { 0x401, "ENGLISH" },
+  { 0x402, "FRENCH" },
+  { 0x410, "NEW GAME" },
+  { 0x411, "PASSWORD" },
   { 0xFFFF, 0 }
 };
 
@@ -345,6 +349,10 @@ const string_t str_tab_en[] = {
   { 0x193, "Monsieur est en parfaite sante." },
   { 0x194, "Y\n" },
   { 0x193, "AU BOULOT !!!\n" },
+  { 0x401, "ENGLISH" },
+  { 0x402, "FRENCH" },
+  { 0x410, "NEW GAME" },
+  { 0x411, "PASSWORD" },
   { 0xFFFF, 0 }
 };
 

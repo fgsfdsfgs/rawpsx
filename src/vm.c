@@ -318,7 +318,8 @@ static op_func_t vm_op_table[] = {
 int vm_init(void) {
   memset(vm.vars, 0, sizeof(vm.vars));
   vm.vars[0xE4] = 0x14; // copy protection checks this
-  vm.vars[0x54] = 0x81; // 0x01 == "Another World", 0x81 == "Out of This World"
+  // 0x01 == "Another World", 0x81 == "Out of This World"
+  vm.vars[0x54] = gfx_get_current_mode() == MODE_PAL ? 0x01 : 0x81;
   vm.vars[VAR_RANDOM_SEED] = 0x1337;
 #ifndef KEEP_COPY_PROTECTION
   // if the game was built to start at the intro, set all the copy protection related shit

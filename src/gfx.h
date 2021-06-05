@@ -2,6 +2,9 @@
 
 #include "types.h"
 
+#define PAGE_W 320
+#define PAGE_H 200
+
 #define COL_ALPHA 0x10
 #define COL_PAGE  0x11
 #define COL_BMP   0xFF
