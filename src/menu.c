@@ -19,6 +19,8 @@
 #define MENU_START_X 16  // in 8-pixel columns
 #define MENU_START_Y 120
 
+#define TEXT_PALETTE 0x1B
+
 static inline int wait_vblanks(int n, const int interrupt) {
   while (n--) {
     VSync(0);
@@ -44,23 +46,48 @@ static inline int do_fade(const int from, const int to) {
   return 0;
 }
 
-static inline void menu_intro(void) {
+static inline void menu_init(void) {
   // load the banks for the copy protection screen to get the bitmaps
   res_setup_part(PART_COPY_PROTECTION);
-  // black
-  gfx_set_palette(0x00);
+  // set font palette
+  gfx_set_next_palette(TEXT_PALETTE);
+}
+
+static inline void menu_intro(void) {
   // do the fade-in for the logos and stuff
   res_load(BMP_DELPHINE);
   if (do_fade(0x17, 0x0F)) goto _interrupted;
-  if (wait_vblanks(90, 1)) goto _interrupted; // wait ~1.5 sec
+  if (wait_vblanks(120, 1)) goto _interrupted; // wait ~1.5 sec
   if (do_fade(0x0F, 0x17)) goto _interrupted;
   res_load(gfx_get_current_mode() == MODE_PAL ? BMP_ANOTHERW : BMP_OUTOFTHISW);
   if (do_fade(0x0E, 0x09)) goto _interrupted;
-  if (wait_vblanks(99, 1)) goto _interrupted;
+  if (wait_vblanks(150, 1)) goto _interrupted;
   if (do_fade(0x09, 0x0E)) goto _interrupted;
+  // draw credits
+  gfx_set_next_palette(TEXT_PALETTE);
+  gfx_fill_page(0x00, 0x00);
+  gfx_draw_string(0x02, 0x12, 0x50, 0x181); // BY
+  gfx_draw_string(0x03, 0x0F, 0x64, 0x182); // ERIC CHAHI
+  wait_vblanks(1, 0);
+  gfx_update_display(0x00);
+  if (wait_vblanks(120, 1)) goto _interrupted;
+  gfx_fill_page(0x00, 0x00);
+  gfx_draw_string(0x04, 0x01, 0x50, 0x183); // MUSIC AND SOUND EFFECTS
+  gfx_draw_string(0x05, 0x14, 0x64, 0x184); // (DE)
+  gfx_draw_string(0x06, 0x0B, 0x78, 0x185); // JEAN-FRANCOIS FREITAS
+  gfx_update_display(0x00);
+  if (wait_vblanks(120, 1)) goto _interrupted;
+  /*
+  gfx_fill_page(0x00, 0x00);
+  gfx_draw_string(0x04, 0x0E, 0x50, 0x186); // VERSION FOR IBM PC
+  gfx_draw_string(0x05, 0x0E, 0x64, 0x187); // BY
+  gfx_draw_string(0x06, 0x0E, 0x78, 0x188); // DANIEL MORAIS
+  gfx_update_display(0x00);
+  if (wait_vblanks(120, 1)) goto _interrupted;
+  */
 _interrupted:
   // clear screen
-  gfx_set_next_palette(0x1B);
+  gfx_set_next_palette(TEXT_PALETTE);
   gfx_fill_page(0x00, 0x00);
   gfx_update_display(0x00);
   gfx_set_work_page(0x00);
@@ -104,20 +131,22 @@ static inline int menu_choice(const int numstr, const u16 str[]) {
 }
 
 static inline int menu_language(void) {
-  const u16 strings[] = { 0x401, 0x402 };
+  const u16 strings[] = { 0x401, 0x402 }; // ENGLISH, FRENCH
   return menu_choice(2, strings);
 }
 
 static inline int menu_start_password(void) {
-  const u16 strings[] = { 0x410, 0x411 };
+  const u16 strings[] = { 0x410, 0x411 }; // NEW GAME, PASSWORD
   return menu_choice(2, strings);
 }
 
 int menu_run(void) {
-  menu_intro();
+  menu_init();
   res_str_tab = menu_language() ? str_tab_fr : str_tab_en;
-  const int part = menu_start_password() ? PART_PASSWORD : PART_INTRO;
-  // clear screen and palette
+  menu_intro();
+  const int part = (res_have_password && menu_start_password()) ?
+    PART_PASSWORD : START_PART;
+  // clear screen and all palettes
   gfx_set_next_palette(0x00);
   gfx_fill_page(0x00, 0x00);
   gfx_update_display(0x00);
