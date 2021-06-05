@@ -15,16 +15,20 @@ void pad_init(void) {
 }
 
 u32 pad_get_input(void) {
-  static u32 old_mask = 0;
   register u32 mask = 0;
-  register u32 ret = 0;
   if (!(pad->btn & PAD_UP))     mask |= IN_DIR_UP;
   if (!(pad->btn & PAD_DOWN))   mask |= IN_DIR_DOWN;
   if (!(pad->btn & PAD_LEFT))   mask |= IN_DIR_LEFT;
   if (!(pad->btn & PAD_RIGHT))  mask |= IN_DIR_RIGHT;
   if (!(pad->btn & PAD_CIRCLE)) mask |= IN_JUMP;
   if (!(pad->btn & PAD_CROSS))  mask |= IN_ACTION;
-  ret = mask;
+  return mask;
+}
+
+u32 pad_get_special_input(void) {
+  static u32 old_mask = 0;
+  register u32 mask = 0;
+  register u32 ret = 0;
   // only return special buttons in the moment they're pressed
   if (!(pad->btn & PAD_START))  mask |= IN_PAUSE;
   if (!(pad->btn & PAD_SELECT)) mask |= IN_PASSWORD;

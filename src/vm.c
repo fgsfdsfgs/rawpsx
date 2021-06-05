@@ -173,7 +173,9 @@ static void op_update_display(void) {
   static u32 tstamp = 0;
 
   const u8 page = vm_fetch_u8();
-  // TODO: input
+
+  vm_handle_special_input(pad_get_special_input());
+
   if (res_cur_part == 0x3E80 && vm.vars[0x67] == 1)
     vm.vars[0xDC] = 0x21;
 
@@ -430,6 +432,23 @@ s16 vm_get_var(const u8 i) {
   return vm.vars[i];
 }
 
+void vm_handle_special_input(u32 mask) {
+  if (mask & IN_PAUSE) {
+    if (res_cur_part != PART_COPY_PROTECTION && res_cur_part != PART_INTRO) {
+      mask &= ~IN_PAUSE;
+      do {
+        VSync(0);
+        mask = pad_get_special_input();
+      } while (!(mask & IN_PAUSE));
+    }
+  }
+
+  if (mask & IN_PASSWORD) {
+    if (res_cur_part != PART_COPY_PROTECTION && res_cur_part != PART_PASSWORD && res_have_password)
+      res_next_part = PART_PASSWORD;
+  }
+}
+
 void vm_update_input(u32 mask) {
   s16 lr = 0;
   s16 m = 0;
@@ -456,14 +475,4 @@ void vm_update_input(u32 mask) {
 
   vm.vars[VAR_HERO_ACTION] = action;
   vm.vars[VAR_HERO_ACTION_POS_MASK] = m;
-
-  if (mask & IN_PAUSE) {
-    if (res_cur_part != PART_COPY_PROTECTION && res_cur_part != PART_INTRO) {
-      mask &= ~IN_PAUSE;
-      do {
-        VSync(0);
-        mask = pad_get_input();
-      } while (!(mask & IN_PAUSE));
-    }
-  }
 }

@@ -25,3 +25,4 @@ void vm_restart_at(const u16 part_id, const u16 pos);
 void vm_setup_tasks(void);
 void vm_run(void);
 void vm_update_input(u32 mask);
+void vm_handle_special_input(u32 mask);

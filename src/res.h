@@ -46,6 +46,7 @@ extern int res_vidseg_idx;
 extern u16 res_next_part;
 extern u16 res_cur_part;
 extern const string_t *res_str_tab;
+extern int res_have_password;
 
 void res_init(void);
 void res_invalidate_res(void);

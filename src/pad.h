@@ -16,3 +16,4 @@ enum input_mask_e {
 
 void pad_init(void);
 u32 pad_get_input(void);
+u32 pad_get_special_input(void);

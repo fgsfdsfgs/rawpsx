@@ -112,11 +112,12 @@ void res_invalidate_all(void) {
 static int res_read_bank(const mementry_t *me, u8 *out) {
   int ret = 0;
   char fname[16];
+  u32 count = 0;
   snprintf(fname, sizeof(fname), BANK_FILENAME, (int)me->bank);
   cd_file_t *f = cd_fopen(fname, 1); // allow reopening same handle because we fseek immediately afterwards
   if (f) {
     cd_fseek(f, me->bank_pos, SEEK_SET);
-    const u32 count = cd_fread(out, me->packed_size, 1, f);
+    count = cd_fread(out, me->packed_size, 1, f);
     cd_fclose(f);
     ret = (count == me->packed_size);
     if (ret && (me->packed_size != me->unpacked_size)) {
@@ -124,7 +125,7 @@ static int res_read_bank(const mementry_t *me, u8 *out) {
       ret = bytekiller_unpack(out, me->unpacked_size, out, me->packed_size);
     }
   }
-  printf("res_read_bank(%d, %p): bank %d ofs %d ret %d\n", me - res_memlist, out, me->bank, me->bank_pos, ret);
+  printf("res_read_bank(%d, %p): bank %d ofs %d count %d packed %d unpacked %d\n", me - res_memlist, out, me->bank, me->bank_pos, count, me->packed_size, me->unpacked_size);
   return ret;
 }
 
