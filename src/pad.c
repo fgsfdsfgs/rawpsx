@@ -30,7 +30,7 @@ u32 pad_get_input(void) {
   if (!(pad->btn & PAD_SELECT)) mask |= IN_PASSWORD;
   if ((mask & IN_PAUSE) && !(old_mask & IN_PAUSE))
     ret |= IN_PAUSE;
-  if ((mask & IN_PASSWORD) && (!old_mask & IN_PASSWORD))
+  if ((mask & IN_PASSWORD) && !(old_mask & IN_PASSWORD))
     ret |= IN_PASSWORD;
   old_mask = mask;
   return ret;
