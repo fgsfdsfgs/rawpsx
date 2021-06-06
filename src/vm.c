@@ -437,16 +437,18 @@ void vm_handle_special_input(u32 mask) {
   if (mask & IN_PAUSE) {
     if (res_cur_part != PART_COPY_PROTECTION && res_cur_part != PART_INTRO) {
       mask &= ~IN_PAUSE;
+      int paused = 1;
       do {
         VSync(0);
         mask = pad_get_special_input();
-      } while (!(mask & IN_PAUSE));
+        if ((mask & IN_PASSWORD) && res_have_password && res_cur_part != PART_PASSWORD) {
+          res_next_part = PART_PASSWORD;
+          paused = 0;
+        } else if (mask & IN_PAUSE) {
+          paused = 0;
+        }
+      } while (paused);
     }
-  }
-
-  if (mask & IN_PASSWORD) {
-    if (res_cur_part != PART_COPY_PROTECTION && res_cur_part != PART_PASSWORD && res_have_password)
-      res_next_part = PART_PASSWORD;
   }
 }
 
