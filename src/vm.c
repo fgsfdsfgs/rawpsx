@@ -438,6 +438,8 @@ void vm_handle_special_input(u32 mask) {
     if (res_cur_part != PART_COPY_PROTECTION && res_cur_part != PART_INTRO) {
       mask &= ~IN_PAUSE;
       int paused = 1;
+      // plot PAUSED right onto the front buffer
+      gfx_show_pause();
       do {
         VSync(0);
         mask = pad_get_special_input();

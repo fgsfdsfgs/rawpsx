@@ -504,3 +504,36 @@ int gfx_get_default_mode(void) {
 int gfx_get_current_mode(void) {
   return gfx_cur_mode;
 }
+
+void gfx_show_pause(void) {
+  VSync(0);
+  DrawSync(0);
+  // make a greyscale copy of the palette
+  u16 pal[NUM_COLORS];
+  for (int i = 0; i < NUM_COLORS; ++i) {
+    register const u16 c = gfx_pal[i];
+    if (c == 0x8000 || c == 0) {
+      pal[i] = c;
+    } else {
+      const u8 r = (c      ) & 0x1F;
+      const u8 g = (c >>  5) & 0x1F;
+      const u8 b = (c >> 10) & 0x1F; 
+      const u8 avg = ((r + g + b) / 3) & 0x1F;
+      pal[i] = avg | (avg << 5) | (avg << 10);
+    }
+  }
+  // suppress any pending palette changes
+  const u16 palnext = gfx_palnum_next;
+  const int palupload = gfx_pal_uploaded;
+  gfx_palnum_next = 0xFF;
+  gfx_pal_uploaded = 1;
+  // upload the new palette and update the screen
+  LoadImage(&gfx_pal_rect, (u32 *)pal);
+  gfx_update_display(0xFE);
+  // restore everything and reupload palette
+  VSync(0);
+  DrawSync(0);
+  LoadImage(&gfx_pal_rect, (u32 *)gfx_pal);
+  gfx_palnum_next = palnext;
+  gfx_pal_uploaded = palupload;
+}
