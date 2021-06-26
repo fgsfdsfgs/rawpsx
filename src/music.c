@@ -160,7 +160,7 @@ static inline void mus_handle_pattern(const u8 ch, const u8 *data) {
   const u16 note1 = read16be(data + 0);
   const u16 note2 = read16be(data + 2);
   const u8 *sndptr = NULL;
-  u16 sndvol = 0;
+  s16 sndvol = 0;
 
   if (note1 == 0xFFFD) {
     vm_set_var(VAR_MUS_MARK, note2);

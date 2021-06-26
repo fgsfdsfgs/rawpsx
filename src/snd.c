@@ -33,8 +33,8 @@
 #define SPU_KEY_OFF_HI ((volatile u16 *)(0x1F801D8E))
 
 struct spu_voice {
-  volatile u16 vol_left;
-  volatile u16 vol_right;
+  volatile s16 vol_left;
+  volatile s16 vol_right;
   volatile u16 sample_rate;
   volatile u16 sample_startaddr;
   volatile u16 attack_decay;
