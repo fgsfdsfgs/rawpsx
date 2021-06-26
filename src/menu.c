@@ -143,7 +143,8 @@ static inline int menu_start_password(void) {
 int menu_run(void) {
   menu_init();
   res_str_tab = menu_language() ? str_tab_fr : str_tab_en;
-  menu_intro();
+  if (res_have_password)
+    menu_intro(); // demo already has an intro in itself
   const int part = (res_have_password && menu_start_password()) ?
     PART_PASSWORD : START_PART;
   // clear screen and all palettes
