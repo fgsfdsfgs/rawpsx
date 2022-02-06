@@ -11,7 +11,7 @@
     <directory_tree>
       <file name="system.cnf" type="data" source="system.cnf"/>
       <file name="rawpsx.exe" type="data" source="rawpsx.exe"/>
-      <dir  name="data" srcdir="data">
+      <dir  name="data" source="data">
         <file name="bank01" type="data"/>
         <file name="bank02" type="data"/>
         <file name="bank03" type="data"/>
