@@ -12,20 +12,20 @@
       <file name="system.cnf" type="data" source="system.cnf"/>
       <file name="rawpsx.exe" type="data" source="rawpsx.exe"/>
       <dir  name="data" source="data">
-        <file name="bank01" type="data"/>
-        <file name="bank02" type="data"/>
-        <file name="bank03" type="data"/>
-        <file name="bank04" type="data"/>
-        <file name="bank05" type="data"/>
-        <file name="bank06" type="data"/>
-        <file name="bank07" type="data"/>
-        <file name="bank08" type="data"/>
-        <file name="bank09" type="data"/>
-        <file name="bank0a" type="data"/>
-        <file name="bank0b" type="data"/>
-        <file name="bank0c" type="data"/>
-        <file name="bank0d" type="data"/>
-        <file name="memlist.bin" type="data"/>
+        <file name="bank01" type="data" source="data/bank01"/>
+        <file name="bank02" type="data" source="data/bank02"/>
+        <file name="bank03" type="data" source="data/bank03"/>
+        <file name="bank04" type="data" source="data/bank04"/>
+        <file name="bank05" type="data" source="data/bank05"/>
+        <file name="bank06" type="data" source="data/bank06"/>
+        <file name="bank07" type="data" source="data/bank07"/>
+        <file name="bank08" type="data" source="data/bank08"/>
+        <file name="bank09" type="data" source="data/bank09"/>
+        <file name="bank0a" type="data" source="data/bank0a"/>
+        <file name="bank0b" type="data" source="data/bank0b"/>
+        <file name="bank0c" type="data" source="data/bank0c"/>
+        <file name="bank0d" type="data" source="data/bank0d"/>
+        <file name="memlist.bin" type="data" source="data/memlist.bin"/>
       </dir>
       <dummy sectors="1024"/>
     </directory_tree>
